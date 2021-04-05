@@ -1,0 +1,11 @@
+<RCC>
+  <qresource prefix="icones">
+    <file>phm.png</file>
+  </qresource>
+  <qresource prefix="css">
+    <file>Adaptic.qss</file>
+  </qresource>
+  <qresource prefix="images">
+    <file>img_default.jpg</file>
+  </qresource>
+</RCC>
