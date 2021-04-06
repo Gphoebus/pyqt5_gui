@@ -2,15 +2,13 @@
 import os
 import sys
 import sqlite3
+import sounddevice as sd
 from PyQt5.QtCore import *
 from PyQt5 import QtGui, QtCore, QtMultimedia
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication, QDockWidget, QFileDialog, QMessageBox
 from PyQt5.QtGui import QPixmap
-
-import queue
-import sounddevice as sd
-from PyQt5.QtMultimedia import QAudioDeviceInfo, QAudio, QCameraInfo
+from PyQt5.QtMultimedia import QAudioDeviceInfo, QAudio
 
 input_audio_deviceInfos = QAudioDeviceInfo.availableDevices(QAudio.AudioInput)
 
@@ -21,14 +19,18 @@ curseur.execute("SELECT * FROM liste_1")
 
 app = QApplication(sys.argv)
 recorder = QtMultimedia.QAudioRecorder()
+selected_audio_input = recorder.audioInput()
+recorder.setAudioInput("Microphone (Realtek(R) Audio)")
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 filename = os.path.join(CURRENT_DIR, "test.mp3")
 settings = QtMultimedia.QAudioEncoderSettings()
+# settings.setChannelCount(2)
 settings.setEncodingMode(QtMultimedia.QMultimedia.ConstantBitRateEncoding)
 selected_codec = "audio/pcm"
 settings.setCodec(selected_codec)
-#bit_rate = 3200  # other values: 32000, 64000,96000, 128000
-#settings.setBitRate(bit_rate)
+# settings.setSampleRate(32000)
+# bit_rate = 3200  # other values: 32000, 64000,96000, 128000
+# settings.setBitRate(bit_rate)
 settings.setQuality(QtMultimedia.QMultimedia.VeryHighQuality)
 selected_container = "audio/x-wav"
 recorder.setEncodingSettings(settings, QtMultimedia.QVideoEncoderSettings(), selected_container)
@@ -53,19 +55,11 @@ with File:
 
 
 def update_now(value):
-    device = devices_list.index(value)
-    print('Device:', devices_list.index(value))
+    #global recorder
 
-def getAudio():
-    try:
-        def audio_callback(indata, frames, time, status):
-            q.put(indata[::downsample, [0]])
+    recorder.setAudioInput(value)
+    print('Device selectionne :', value)
 
-        stream = sd.InputStream(device=device, channels=max(channels), samplerate=samplerate,callback=audio_callback)
-        with stream:
-            input()
-    except Exception as e:
-        print("ERROR: ", e)
 
 def getFile(valeur):
     baseDeDonnees = sqlite3.connect('labase.db')
@@ -112,12 +106,11 @@ def apropos():
     # dlg.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
     dlg.exec_()
 
+
 def showTime():
     timer.stop()
     ui_propos.close()
     ui.show()
-
-
 
 
 def listview_clicked():
@@ -141,10 +134,12 @@ def enregistre_sous():
 
 def stop():
     print("stop")
+    ui.statusbar.showMessage("Enregistrement stoppé")
     recorder.stop()
 
 def lire():
     print("record")
+    ui.statusbar.showMessage("En enregistrement")
     recorder.record()
 
 # ------- gestion de la fenetre a propos ------
@@ -153,13 +148,15 @@ timer.timeout.connect(showTime)
 timer.start(2000)
 
 ui_propos  = uic.loadUi("apropos.ui")
+ui_propos.setWindowFlag(QtCore.Qt.FramelessWindowHint)
+#ui_propos.setAttribute(QtCore.Qt.WA_TranslucentBackground)
 ui_propos.show()
 
 # --------- fin de  a propos -------
 
 ui = uic.loadUi("menu_bar.ui")
 ui.setWindowIcon(QtGui.QIcon('phm.png'))
-ui.statusbar.showMessage("Copyright Phoebus du F.L.A.L.");
+ui.statusbar.showMessage("Copyright Phoebus du F.L.A.L.")
 #ui.show()
 
 
@@ -173,7 +170,7 @@ ui.btn_stop.clicked.connect(stop)
 
 ui.listWidget.clicked.connect(listview_clicked)
 
-# ------- nourrissage liste ------------
+# ------- nourrissage liste par extraction de la base de donnée ------------
 for liste in curseur.fetchall():
     ui.listWidget.addItem(str(liste[1]))
 baseDeDonnees.close()
@@ -188,12 +185,15 @@ docker.setFloating(False)
 docker.setStyleSheet('background-color:gray')
 docker.show()
 
+# ----------- nourissage de la liste des fenetre -------
 for doc in ui.findChildren(QDockWidget):
     print(str(doc.windowTitle()))
     ui.menuAffichage.addAction(doc.toggleViewAction())
 
 # ui.___.connect(traite)
 # ui.___.clicked.connect(ajouter)
+
+# ------------ Nourissage liste des peripheriques micro ---------
 devices_list = []
 for device in input_audio_deviceInfos:
     devices_list.append(device.deviceName())

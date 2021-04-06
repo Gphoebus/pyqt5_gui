@@ -10,6 +10,7 @@ app = QtWidgets.QApplication(sys.argv)
 recorder = QtMultimedia.QAudioRecorder()
 
 selected_audio_input = recorder.audioInput()
+print ("audio input =",selected_audio_input)
 
 print("Audio Inputs:")
 for i, audio_input in enumerate(recorder.audioInputs()):
